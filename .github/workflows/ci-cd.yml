@@ -599,8 +599,13 @@ jobs:
     - pre-setup  # transitive, for accessing settings
     strategy:
       matrix:
-        runner-vm-os:
-        - macos-15-intel
+        include:
+        - runner-vm-os: macos-15-intel
+          # macos-15-intel runs macOS 15; brew bottles target 15.0 there.
+          macosx-deployment-target: "15.0"
+        - runner-vm-os: macos-14  # Apple Silicon (arm64)
+          # macos-14 runs macOS 14; brew arm64 bottles target 14.0.
+          macosx-deployment-target: "14.0"
     uses: ./.github/workflows/reusable-cibuildwheel.yml
     with:
       runner-vm-os: ${{ matrix.runner-vm-os }}
@@ -610,10 +615,14 @@ jobs:
       dists-artifact-name: >-
         ${{ needs.pre-setup.outputs.dists-artifact-name }}
       # CIBW_CONFIG_SETTINGS: `with-cython-tracing` — for coverage collection
-      # CIBW_ARCHS_MACOS=all x86_64 arm64 universal2
+      # CIBW_ARCHS_MACOS=native: build the architecture of the runner itself —
+      # x86_64 on macos-15-intel, arm64 on macos-14 (Apple Silicon).
+      # MACOSX_DEPLOYMENT_TARGET is set per-runner because delocate enforces
+      # that the wheel target matches bundled brew dylibs, which differ by OS.
       # FIXME: Add support for free-threading / see issue #822
       environment-variables: |-
         CIBW_ARCHS_MACOS=native
+        MACOSX_DEPLOYMENT_TARGET=${{ matrix.macosx-deployment-target }}
 
         CIBW_CONFIG_SETTINGS<<EOF
         with-cython-tracing=${{
@@ -630,7 +639,6 @@ jobs:
           *-macosx_universal2
           *-musllinux_*
           *-win32
-          *_arm64
           *t-*
         EOF'
           || ''
@@ -1232,6 +1240,7 @@ jobs:
         - 3.9
         runner-vm-os:
         - macos-15-intel
+        - macos-14  # Apple Silicon (arm64)
         dist-type:
         - binary
         - source
