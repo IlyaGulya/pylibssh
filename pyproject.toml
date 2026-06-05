@@ -284,11 +284,16 @@ before-build = [
 # delocate (bundled with cibuildwheel v3) enforces that the wheel's
 # deployment target matches the bundled dylibs. The brew-installed
 # openssl@3 bottle on macos-15-intel targets macOS 15.0, while the
-# arm64 bottle on macos-14 targets macOS 14.0. CI overrides this
-# per-runner via `MACOSX_DEPLOYMENT_TARGET` in the workflow matrix;
-# the value below is the fallback for local builds on a recent host.
+# arm64 bottle on macos-14 targets macOS 14.0.
 # FIXME: eventually, we may want to lower the target: see PR #795 and others
 MACOSX_DEPLOYMENT_TARGET = "15.0"
+CFLAGS = "-I$(brew --prefix libssh)/include ${CFLAGS}"
+LDFLAGS = "-L$(brew --prefix libssh)/lib ${LDFLAGS}"
+
+[[tool.cibuildwheel.overrides]]
+select = "*-macosx_arm64"
+inherit.environment = "append"
+environment = { MACOSX_DEPLOYMENT_TARGET = "14.0" }
 
 [tool.cibuildwheel.windows]
 skip = "*"
