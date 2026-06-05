@@ -249,6 +249,7 @@ jobs:
         --parallel auto
         --parallel-live
         --skip-missing-interpreters false
+        --skip-pkg-install
         -qq
     - name: Produce markdown test summary from JUnit
       if: always()
