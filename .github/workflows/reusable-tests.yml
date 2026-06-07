@@ -131,6 +131,14 @@ jobs:
       if: >-
         runner.os == 'macOS'
       run: brew install libssh
+    - name: Export Homebrew libssh build paths on macOS
+      if: >-
+        runner.os == 'macOS'
+      run: |
+        {
+          echo "CFLAGS=-I$(brew --prefix libssh)/include ${CFLAGS:-}"
+          echo "LDFLAGS=-L$(brew --prefix libssh)/lib ${LDFLAGS:-}"
+        } >> "${GITHUB_ENV}"
     - name: Install catchsegv and libssh headers on Linux for cythonize+coverage
       if: >-
         runner.os == 'Linux'

@@ -1183,6 +1183,7 @@ jobs:
     - build-src
     - pre-setup  # transitive, for accessing settings
     strategy:
+      fail-fast: false
       matrix:
         python-version:
         - "3.14"
@@ -1223,6 +1224,7 @@ jobs:
     - build-src
     - pre-setup  # transitive, for accessing settings
     strategy:
+      fail-fast: false
       matrix:
         python-version:
         - "3.14"
