@@ -599,9 +599,9 @@ jobs:
     - pre-setup  # transitive, for accessing settings
     strategy:
       matrix:
-        include:
-        - runner-vm-os: macos-15-intel
-        - runner-vm-os: macos-14  # Apple Silicon (arm64)
+        runner-vm-os:
+        - macos-15-intel
+        - macos-14  # Apple Silicon (arm64)
     uses: ./.github/workflows/reusable-cibuildwheel.yml
     with:
       runner-vm-os: ${{ matrix.runner-vm-os }}
@@ -611,7 +611,7 @@ jobs:
       dists-artifact-name: >-
         ${{ needs.pre-setup.outputs.dists-artifact-name }}
       # CIBW_CONFIG_SETTINGS: `with-cython-tracing` — for coverage collection
-      # CIBW_ARCHS_MACOS=native: build the architecture of the runner itself —
+      # CIBW_ARCHS_MACOS=native: build the architecture of the runner itself:
       # x86_64 on macos-15-intel, arm64 on macos-14 (Apple Silicon).
       # FIXME: Add support for free-threading / see issue #822
       environment-variables: |-
@@ -1183,7 +1183,6 @@ jobs:
     - build-src
     - pre-setup  # transitive, for accessing settings
     strategy:
-      fail-fast: false
       matrix:
         python-version:
         - "3.14"
@@ -1224,7 +1223,6 @@ jobs:
     - build-src
     - pre-setup  # transitive, for accessing settings
     strategy:
-      fail-fast: false
       matrix:
         python-version:
         - "3.14"
