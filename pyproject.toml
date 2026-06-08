@@ -287,8 +287,6 @@ before-build = [
 # arm64 bottle on macos-14 targets macOS 14.0.
 # FIXME: eventually, we may want to lower the target: see PR #795 and others
 MACOSX_DEPLOYMENT_TARGET = "15.0"
-CFLAGS = "-I$(brew --prefix libssh)/include ${CFLAGS}"
-LDFLAGS = "-L$(brew --prefix libssh)/lib ${LDFLAGS}"
 
 [[tool.cibuildwheel.overrides]]
 select = "*-macosx_arm64"

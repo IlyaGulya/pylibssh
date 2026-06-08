@@ -6,6 +6,7 @@ import os
 import typing as _t  # noqa: WPS111
 from contextlib import contextmanager
 from pathlib import Path
+from platform import system as _get_platform_system
 from sys import version_info as _python_version_tuple
 
 from expandvars import expandvars
@@ -156,6 +157,33 @@ def make_cythonize_cli_args_from_config(
     return cli_flags + [py_ver_arg] + cli_kwargs + ['--'] + config['src']
 
 
+def _prepend_env_var(env: dict[str, str], name: str, prefix: str) -> None:
+    """Prepend a value to an environment variable definition."""
+    env[name] = ' '.join((
+        prefix,
+        env.get(name, os.getenv(name, '')),
+    )).strip()
+
+
+def _add_homebrew_libssh_build_env(env: dict[str, str]) -> None:
+    """Add Homebrew libssh build paths on macOS when available."""
+    if _get_platform_system() != 'Darwin':
+        return
+
+    for libssh_prefix in (
+        Path('/opt/homebrew/opt/libssh'),
+        Path('/usr/local/opt/libssh'),
+    ):
+        if not (libssh_prefix / 'include/libssh/libssh.h').exists():
+            continue
+
+        include_dir = libssh_prefix / 'include'
+        library_dir = libssh_prefix / 'lib'
+        _prepend_env_var(env, 'CFLAGS', f'-I{include_dir!s}')
+        _prepend_env_var(env, 'LDFLAGS', f'-L{library_dir!s}')
+        return
+
+
 @contextmanager
 def patched_env(
     env: dict[str, str],
@@ -171,6 +199,7 @@ def patched_env(
     """
     orig_env = os.environ.copy()
     expanded_env = {name: expandvars(var_val) for name, var_val in env.items()}  # type: ignore[no-untyped-call]
+    _add_homebrew_libssh_build_env(expanded_env)
     os.environ.update(expanded_env)
 
     if cython_line_tracing_requested:
