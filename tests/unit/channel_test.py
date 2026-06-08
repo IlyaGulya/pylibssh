@@ -49,7 +49,8 @@ def test_open_session_small_timeout(ssh_session_connect):
     try:
         ssh_channel = ssh_session.new_channel()
     except LibsshChannelException as exc:
-        assert str(exc).startswith('Failed to open_session')
+        if not str(exc).startswith('Failed to open_session'):
+            raise
     else:
         ssh_channel.close()
         pytest.skip('local sshd responded before the smallest libssh timeout')
