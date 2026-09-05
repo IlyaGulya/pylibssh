@@ -1,0 +1,2 @@
+Added macOS ARM64 distribution tests and configured Homebrew library paths
+for source-distribution builds on macOS.

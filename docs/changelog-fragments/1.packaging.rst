@@ -1,0 +1,1 @@
+Added pre-built wheels for Apple Silicon Macs running macOS 14 or newer.
