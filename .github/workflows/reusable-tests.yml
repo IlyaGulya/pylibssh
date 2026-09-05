@@ -129,8 +129,17 @@ jobs:
       run: sudo apt update && sudo apt install build-essential libssl-dev
     - name: Install libssh and openssl headers on macOS
       if: >-
-        runner.os == 'macOS'
+        runner.os == 'macOS' && inputs.dist-type == 'source'
       run: brew install libssh
+    - name: Determine Homebrew libssh build flags
+      if: >-
+        runner.os == 'macOS' && inputs.dist-type == 'source'
+      id: libssh-build-flags
+      run: |
+        {
+          echo "cflags=-I$(brew --prefix libssh)/include ${CFLAGS:-}"
+          echo "ldflags=-L$(brew --prefix libssh)/lib ${LDFLAGS:-}"
+        } >> "${GITHUB_OUTPUT}"
     - name: Install catchsegv and libssh headers on Linux for cythonize+coverage
       if: >-
         runner.os == 'Linux'
@@ -220,6 +229,9 @@ jobs:
     - name: >-
         Pre-populate tox env:
         ${{ env.TOXENV }}
+      env:
+        CFLAGS: ${{ steps.libssh-build-flags.outputs.cflags || env.CFLAGS }}
+        LDFLAGS: ${{ steps.libssh-build-flags.outputs.ldflags || env.LDFLAGS }}
       run: >-
         python -m
         tox
