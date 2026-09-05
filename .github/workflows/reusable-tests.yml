@@ -171,7 +171,7 @@ jobs:
     - name: Download all the dists
       uses: actions/download-artifact@v8
       with:
-        pattern: ${{ needs.pre-setup.outputs.dists-artifact-name }}*
+        pattern: ${{ inputs.dists-artifact-name }}*
         path: dist/
         merge-multiple: true
 
@@ -249,6 +249,7 @@ jobs:
         --parallel auto
         --parallel-live
         --skip-missing-interpreters false
+        --skip-pkg-install
         -qq
     - name: Produce markdown test summary from JUnit
       if: always()

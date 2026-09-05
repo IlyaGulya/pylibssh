@@ -1,0 +1,2 @@
+Fixed distribution tests to download the requested artifacts and retain the
+installed wheel or source distribution when running the test suite.
