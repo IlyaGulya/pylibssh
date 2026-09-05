@@ -1,9 +1,17 @@
 """Test util helpers."""
 
 import getpass
+import os
+import pathlib
+import signal
+import socket
 import subprocess
 import sys
 import time
+import typing as _t  # noqa: WPS111  # project typing alias
+from contextlib import contextmanager
+
+from pylibsshext.session import Session
 
 
 IS_MACOS = sys.platform == 'darwin'
@@ -100,3 +108,64 @@ def ensure_ssh_session_connected(
         look_for_keys=False,
         open_session_retries=ssh_session_retries,
     )
+
+
+@contextmanager
+def paused_ssh_session(
+    sshd_addr: tuple[str, int],
+    ssh_clientkey_path: pathlib.Path,
+) -> _t.Iterator[Session]:
+    """Provide an authenticated session with its SSH transport paused.
+
+    :param sshd_addr: Address of the test SSH server.
+    :param ssh_clientkey_path: Private key for the test SSH server.
+    :yields: An authenticated session that cannot receive server replies.
+    """
+    host, port = sshd_addr
+    command = [
+        '/usr/bin/ssh',
+        '-F/dev/null',
+        '-oBatchMode=yes',
+        '-oStrictHostKeyChecking=no',
+        '-oUserKnownHostsFile=/dev/null',
+        '-oIdentitiesOnly=yes',
+        '-oIdentityAgent=none',
+        '-i',
+        str(ssh_clientkey_path),
+        '-p',
+        str(port),
+        '-W',
+        f'{host}:{port}',
+        f'{getpass.getuser()}@{host}',
+    ]
+    client, transport = socket.socketpair()
+    ssh_session = Session()
+    with (
+        client,
+        transport,
+        subprocess.Popen(
+            command,
+            stdin=transport,
+            stdout=transport,
+        ) as proxy,
+    ):
+        try:  # noqa: WPS229  # keep transport cleanup around connection and test
+            ssh_session.connect(
+                fd=client.fileno(),
+                host=host,
+                user=getpass.getuser(),
+                private_key=ssh_clientkey_path.read_bytes(),
+                host_key_checking=False,
+                look_for_keys=False,
+            )
+            proxy.send_signal(signal.SIGSTOP)
+            # Wait for the proxy to stop before sending a channel-open request.
+            _, stop_status = os.waitpid(proxy.pid, os.WUNTRACED)
+            assert os.WIFSTOPPED(stop_status)
+            yield ssh_session
+        finally:
+            proxy.send_signal(signal.SIGCONT)
+            try:  # noqa: WPS505  # terminate the proxy even if session cleanup fails
+                ssh_session.close()
+            finally:
+                proxy.terminate()

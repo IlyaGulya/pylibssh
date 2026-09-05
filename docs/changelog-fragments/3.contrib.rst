@@ -1,0 +1,2 @@
+Made the channel-open timeout test independent of the local SSH server's
+response speed by pausing its transport after authentication.

@@ -6,6 +6,7 @@ import signal
 import time
 
 import pytest
+from _service_utils import paused_ssh_session
 
 from pylibsshext.channel import Channel
 from pylibsshext.errors import LibsshChannelException
@@ -38,20 +39,20 @@ def ssh_channel(ssh_client_session):
         chan.close()
 
 
-def test_open_session_small_timeout(ssh_session_connect):
-    """Test opening a new channel with a small timeout value.
+def test_open_session_small_timeout(
+    sshd_addr: tuple[str, int],
+    ssh_clientkey_path: pathlib.Path,
+) -> None:
+    """Check that a stalled channel-open request raises SSH_AGAIN.
 
-    This generates an exception from ``ssh_channel_open_session()``
-    returning ``SSH_AGAIN`` with the ``usec`` timeout and default
-    ``open_session_retries`` value of ``0``.
+    :param sshd_addr: Address of the test SSH server.
+    :param ssh_clientkey_path: Private key for the test SSH server.
     """
-    ssh_session = Session()
-    ssh_session_connect(ssh_session)
-    ssh_session.set_ssh_options('timeout_usec', SMALL_TIMEOUT_USEC)
-    error_msg = '^Failed to open_session'
-    with pytest.raises(LibsshChannelException, match=error_msg):
-        ssh_session.new_channel()
-    ssh_session.close()
+    with paused_ssh_session(sshd_addr, ssh_clientkey_path) as ssh_session:
+        ssh_session.set_ssh_options('timeout_usec', SMALL_TIMEOUT_USEC)
+        error_msg = r'^Failed to open_session: \[-2\]$'
+        with pytest.raises(LibsshChannelException, match=error_msg):
+            ssh_session.new_channel()
 
 
 def test_open_session_large_timeout(ssh_session_connect):
